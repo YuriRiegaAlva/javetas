@@ -35,14 +35,6 @@ impl Project {
         self.root.join("out")
     }
 
-    /// Directory where new classes go: `src/<package/with/slashes>`.
-    pub fn class_dir(&self) -> PathBuf {
-        match &self.package {
-            Some(p) => self.src_dir().join(p.replace('.', "/")),
-            None => self.src_dir(),
-        }
-    }
-
     /// Full class name for `java -cp out ...`.
     pub fn full_class(&self, name: &str) -> String {
         match &self.package {

@@ -18,7 +18,7 @@ Create and manage simple Java projects for learning.
 
 Usage:
   javetas new <name> [--package <pkg>]   Create a new project
-  javetas add <ClassName>                Add a class to the current project
+  javetas add <ClassName> [--package <pkg>]   Add a class to the current project
   javetas build                          Compile all sources into out/
   javetas run [ClassName]                Compile and run (default: Main)
   javetas update [--yes]                 Self-update to the latest release
@@ -26,7 +26,7 @@ Usage:
   javetas version                        Show the version
 
 Options:
-  -p, --package <pkg>   Package for the new project (e.g. com.ejemplo)
+  -p, --package <pkg>   Package for a new project or class (e.g. com.ejemplo)
   -y, --yes             Skip the update confirmation prompt
   -h, --help            Show this help
   -v, --version         Show the version
@@ -75,7 +75,9 @@ fn main() -> ExitCode {
             0
         }
         Command::New { name, package } => commands::new_cmd(name.as_deref(), package.as_deref()),
-        Command::Add { class } => with_project(|p| commands::add_cmd(p, class.as_deref())),
+        Command::Add { class, package } => {
+            with_project(|p| commands::add_cmd(p, class.as_deref(), package.as_deref()))
+        }
         Command::Build => with_project(commands::build_cmd),
         Command::Run { class } => with_project(|p| commands::run_cmd(p, class.as_deref())),
         Command::Update { yes } => update::update_cmd(yes),

@@ -7,6 +7,7 @@ pub enum Command {
     },
     Add {
         class: Option<String>,
+        package: Option<String>,
     },
     Build,
     Run {
@@ -54,16 +55,28 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         }
         "add" => {
             let mut class = None;
-            for arg in &args[1..] {
-                if arg.starts_with('-') {
+            let mut package = None;
+            let mut i = 1;
+            while i < args.len() {
+                let arg = &args[i];
+                if arg == "--package" || arg == "-p" {
+                    i += 1;
+                    if i >= args.len() {
+                        return Err("`--package` needs a value (e.g. `--package com.nuevo`)".into());
+                    }
+                    package = Some(args[i].clone());
+                } else if let Some(value) = arg.strip_prefix("--package=") {
+                    package = Some(value.to_string());
+                } else if arg.starts_with('-') {
                     return Err(format!("unknown flag: {arg}"));
-                }
-                if class.is_some() {
+                } else if class.is_none() {
+                    class = Some(arg.clone());
+                } else {
                     return Err(format!("unexpected argument: {arg}"));
                 }
-                class = Some(arg.clone());
+                i += 1;
             }
-            Ok(Command::Add { class })
+            Ok(Command::Add { class, package })
         }
         "build" => {
             if args.len() > 1 {

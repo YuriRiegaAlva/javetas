@@ -111,7 +111,7 @@ pub fn new_cmd(name: Option<&str>, package: Option<&str>) -> i32 {
     0
 }
 
-pub fn add_cmd(project: &Project, class: Option<&str>) -> i32 {
+pub fn add_cmd(project: &Project, class: Option<&str>, package: Option<&str>) -> i32 {
     let class = match class {
         Some(c) if !c.is_empty() => c.to_string(),
         _ => match prompt("Class name:") {
@@ -128,7 +128,22 @@ pub fn add_cmd(project: &Project, class: Option<&str>) -> i32 {
         ));
     }
 
-    let dir = project.class_dir();
+    // `--package` wins over the project's package; otherwise inherit it.
+    let package = match package {
+        Some(p) if !p.is_empty() => Some(p.to_string()),
+        _ => project.package.clone(),
+    };
+    if let Some(p) = &package
+        && !valid_package(p)
+    {
+        return error(&format!("`{p}` is not a valid package name"));
+    }
+
+    // The folder follows the package: dots become directory separators.
+    let dir = match &package {
+        Some(p) => project.src_dir().join(p.replace('.', "/")),
+        None => project.src_dir(),
+    };
     if let Err(e) = fs::create_dir_all(&dir) {
         return error(&format!("cannot create directories: {e}"));
     }
@@ -136,7 +151,7 @@ pub fn add_cmd(project: &Project, class: Option<&str>) -> i32 {
     if file.exists() {
         return error(&format!("file already exists: {}", file.display()));
     }
-    let content = templates::class_java(project.package.as_deref(), &class);
+    let content = templates::class_java(package.as_deref(), &class);
     if let Err(e) = fs::write(&file, content) {
         return error(&format!("cannot write {}: {e}", file.display()));
     }

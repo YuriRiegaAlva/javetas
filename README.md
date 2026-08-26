@@ -30,9 +30,11 @@ javetas new demo --package com.ejemplo  # with a package
 
 cd demo
 javetas add Persona                     # add a class to the project
+javetas add Persona --package com.otro  # add a class in its own package
 javetas build                           # compile into out/
 javetas run                             # compile and run Main
 javetas run Persona                     # run a different class
+javetas run com.otro.Persona            # run a class in another package
 javetas update                          # self-update to the latest release
 javetas update --yes                    # same, without asking
 ```
@@ -51,5 +53,5 @@ cargo install --path .        # install locally
 Push a tag and GitHub Actions builds binaries for Linux, macOS and Windows and attaches them to a GitHub Release:
 
 ```sh
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.3.0 && git push origin v0.3.0
 ```
