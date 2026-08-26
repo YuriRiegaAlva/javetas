@@ -1,0 +1,53 @@
+# javetas
+
+A tiny CLI that scaffolds simple Java projects for learning. No Maven, no Gradle, no magic — just `javac`, `java`, and a Makefile you can read.
+
+## Requirements
+
+- A JDK (Java 25 or newer) to compile and run the generated projects.
+
+## Install
+
+**Linux / macOS**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/YuriRiegaAlva/javetas/main/install.sh | sh
+```
+
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/YuriRiegaAlva/javetas/main/install.ps1 | iex
+```
+
+The binary is downloaded from the [latest release](https://github.com/YuriRiegaAlva/javetas/releases) and installed to `~/.local/bin` (Linux/macOS) or `%LOCALAPPDATA%\javetas` (Windows). No Rust toolchain needed.
+
+## Usage
+
+```sh
+javetas new demo                        # create a project (interactive if needed)
+javetas new demo --package com.ejemplo  # with a package
+
+cd demo
+javetas add Persona                     # add a class to the project
+javetas build                           # compile into out/
+javetas run                             # compile and run Main
+javetas run Persona                     # run a different class
+```
+
+Each generated project contains a `README.md` that explains how `javac`, `java`, and the classpath work, plus a `Makefile` (`make`, `make run`, `make clean`).
+
+## Development
+
+```sh
+cargo build --release
+cargo install --path .        # install locally
+```
+
+## Releasing
+
+Push a tag and GitHub Actions builds binaries for Linux, macOS and Windows and attaches them to a GitHub Release:
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
