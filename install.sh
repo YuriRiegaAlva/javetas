@@ -18,7 +18,7 @@ case "$os-$arch" in
 esac
 
 url="https://github.com/$REPO/releases/latest/download/$target.tar.gz"
-dest="${XDG_BIN_HOME:-$HOME/.local}/bin"
+dest="${XDG_BIN_HOME:-$HOME/.local/bin}"
 tmp="$(mktemp -d)"
 
 echo "Downloading javetas for $os $arch ..."
