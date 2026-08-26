@@ -103,8 +103,12 @@ fn download(url: &str, dest: &Path) -> Result<(), String> {
     }
 }
 
-fn temp_dir() -> Result<PathBuf, String> {
-    let dir = env::temp_dir().join(format!("javetas-update-{}", std::process::id()));
+fn temp_dir(exe: &Path) -> Result<PathBuf, String> {
+    let base = match exe.parent() {
+        Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
+        _ => env::temp_dir(),
+    };
+    let dir = base.join(format!(".javetas-update-{}", std::process::id()));
     fs::create_dir_all(&dir).map_err(|e| format!("cannot create temp dir: {e}"))?;
     Ok(dir)
 }
@@ -121,7 +125,7 @@ fn make_executable(_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn perform_update(dir: &Path, asset_url: &str) -> Result<PathBuf, String> {
+fn perform_update(dir: &Path, asset_url: &str, exe: &Path) -> Result<PathBuf, String> {
     let archive = dir.join("javetas.tar.gz");
     download(asset_url, &archive)?;
 
@@ -148,14 +152,19 @@ fn perform_update(dir: &Path, asset_url: &str) -> Result<PathBuf, String> {
     }
     make_executable(&new_bin)?;
 
-    let exe = env::current_exe().map_err(|e| format!("cannot locate the installed binary: {e}"))?;
-    fs::rename(&new_bin, &exe).map_err(|e| {
-        format!(
-            "cannot replace {} (do you have write permission?): {e}",
-            exe.display()
-        )
-    })?;
-    Ok(exe)
+    match fs::rename(&new_bin, exe) {
+        Ok(()) => {}
+        Err(e) => {
+            fs::copy(&new_bin, exe).map_err(|e2| {
+                format!(
+                    "cannot replace {} (do you have write permission?): {e} (copy fallback: {e2})",
+                    exe.display()
+                )
+            })?;
+            let _ = fs::remove_file(&new_bin);
+        }
+    }
+    Ok(exe.to_path_buf())
 }
 
 pub fn update_cmd(yes: bool) -> i32 {
@@ -205,11 +214,15 @@ pub fn update_cmd(yes: bool) -> i32 {
         }
     }
 
-    let dir = match temp_dir() {
+    let exe = match env::current_exe() {
+        Ok(e) => e,
+        Err(e) => return error(&format!("cannot locate the installed binary: {e}")),
+    };
+    let dir = match temp_dir(&exe) {
         Ok(d) => d,
         Err(e) => return error(&e),
     };
-    let result = perform_update(&dir, &asset_url);
+    let result = perform_update(&dir, &asset_url, &exe);
     let _ = fs::remove_dir_all(&dir);
     match result {
         Ok(exe) => {
