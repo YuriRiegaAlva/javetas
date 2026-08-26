@@ -11,13 +11,13 @@ A tiny CLI that scaffolds simple Java projects for learning. No Maven, no Gradle
 **Linux / macOS**
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/YuriRiegaAlva/javetas/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/YuriRiegaAlva/javetas/main/install.sh | sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://raw.githubusercontent.com/YuriRiegaAlva/javetas/master/install.ps1 | iex
+irm https://raw.githubusercontent.com/YuriRiegaAlva/javetas/main/install.ps1 | iex
 ```
 
 The binary is downloaded from the [latest release](https://github.com/YuriRiegaAlva/javetas/releases) and installed to `~/.local/bin` (Linux/macOS) or `%LOCALAPPDATA%\javetas` (Windows). No Rust toolchain needed.
