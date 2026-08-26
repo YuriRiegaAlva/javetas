@@ -33,6 +33,8 @@ javetas add Persona                     # add a class to the project
 javetas build                           # compile into out/
 javetas run                             # compile and run Main
 javetas run Persona                     # run a different class
+javetas update                          # self-update to the latest release
+javetas update --yes                    # same, without asking
 ```
 
 Each generated project contains a `README.md` that explains how `javac`, `java`, and the classpath work, plus a `Makefile` (`make`, `make run`, `make clean`).

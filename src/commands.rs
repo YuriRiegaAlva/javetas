@@ -6,20 +6,20 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command as Process;
 
-fn error(msg: &str) -> i32 {
+pub(crate) fn error(msg: &str) -> i32 {
     eprintln!("{} {msg}", style::red("error:"));
     1
 }
 
-fn ok(msg: &str) {
+pub(crate) fn ok(msg: &str) {
     println!("{} {msg}", style::green("ok:"));
 }
 
-fn warn(msg: &str) {
+pub(crate) fn warn(msg: &str) {
     eprintln!("{} {msg}", style::yellow("warn:"));
 }
 
-fn prompt(label: &str) -> Option<String> {
+pub(crate) fn prompt(label: &str) -> Option<String> {
     print!("{} ", style::yellow(&format!("? {label}")));
     let _ = io::stdout().flush();
     let mut line = String::new();

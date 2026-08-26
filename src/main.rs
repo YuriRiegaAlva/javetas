@@ -3,6 +3,7 @@ mod commands;
 mod project;
 mod style;
 mod templates;
+mod update;
 
 use args::{Command, parse};
 use project::Project;
@@ -20,11 +21,13 @@ Usage:
   javetas add <ClassName>                Add a class to the current project
   javetas build                          Compile all sources into out/
   javetas run [ClassName]                Compile and run (default: Main)
+  javetas update [--yes]                 Self-update to the latest release
   javetas help                           Show this help
   javetas version                        Show the version
 
 Options:
   -p, --package <pkg>   Package for the new project (e.g. com.ejemplo)
+  -y, --yes             Skip the update confirmation prompt
   -h, --help            Show this help
   -v, --version         Show the version
 
@@ -75,6 +78,7 @@ fn main() -> ExitCode {
         Command::Add { class } => with_project(|p| commands::add_cmd(p, class.as_deref())),
         Command::Build => with_project(commands::build_cmd),
         Command::Run { class } => with_project(|p| commands::run_cmd(p, class.as_deref())),
+        Command::Update { yes } => update::update_cmd(yes),
     };
 
     ExitCode::from(code as u8)

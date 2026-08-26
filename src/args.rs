@@ -12,6 +12,9 @@ pub enum Command {
     Run {
         class: Option<String>,
     },
+    Update {
+        yes: bool,
+    },
 }
 
 pub fn parse(args: &[String]) -> Result<Command, String> {
@@ -80,6 +83,19 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
                 class = Some(arg.clone());
             }
             Ok(Command::Run { class })
+        }
+        "update" => {
+            let mut yes = false;
+            for arg in &args[1..] {
+                if arg == "--yes" || arg == "-y" {
+                    yes = true;
+                } else if arg.starts_with('-') {
+                    return Err(format!("unknown flag: {arg}"));
+                } else {
+                    return Err(format!("unexpected argument: {arg}"));
+                }
+            }
+            Ok(Command::Update { yes })
         }
         other => Err(format!("unknown command: {other}")),
     }
