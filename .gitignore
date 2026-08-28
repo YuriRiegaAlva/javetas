@@ -1,1 +1,5 @@
 /target
+
+# macOS metadata (especially on FAT/exFAT drives)
+._*
+.DS_Store

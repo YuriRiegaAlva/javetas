@@ -160,12 +160,20 @@ pub fn add_cmd(project: &Project, class: Option<&str>, package: Option<&str>) ->
     0
 }
 
+fn is_apple_double(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|n| n.starts_with("._"))
+}
+
 fn collect_java_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();
         if path.is_dir() {
             collect_java_files(&path, files)?;
-        } else if path.extension().and_then(|e| e.to_str()) == Some("java") {
+        } else if path.extension().and_then(|e| e.to_str()) == Some("java")
+            && !is_apple_double(&path)
+        {
             files.push(path);
         }
     }

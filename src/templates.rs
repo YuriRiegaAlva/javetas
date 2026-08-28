@@ -67,7 +67,7 @@ pub fn makefile(main_class: &str) -> String {
 JAVAC = javac
 JAVA  = java
 OUT   = out
-SRC   = $(shell find src -name '*.java')
+SRC   = $(shell find src -type f -name '*.java' ! -name '._*')
 
 .PHONY: all build run clean
 
@@ -107,6 +107,10 @@ out/
 .idea/
 .vscode/
 *.iml
+
+# macOS metadata (especially on FAT/exFAT drives)
+._*
+.DS_Store
 "#
     .to_string()
 }
