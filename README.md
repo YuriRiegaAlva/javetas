@@ -53,5 +53,5 @@ cargo install --path .        # install locally
 Push a tag and GitHub Actions builds binaries for Linux, macOS and Windows and attaches them to a GitHub Release:
 
 ```sh
-git tag v0.3.0 && git push origin v0.3.0
+git tag v0.3.2 && git push origin v0.3.2
 ```
