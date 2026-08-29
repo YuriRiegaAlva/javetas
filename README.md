@@ -31,6 +31,7 @@ javetas new demo --package com.ejemplo  # with a package
 cd demo
 javetas add Persona                     # add a class to the project
 javetas add Persona --package com.otro  # add a class in its own package
+javetas add Contrato --interface        # add an interface instead of a class
 javetas build                           # compile into out/
 javetas run                             # compile and run Main
 javetas run Persona                     # run a different class

@@ -8,6 +8,7 @@ pub enum Command {
     Add {
         class: Option<String>,
         package: Option<String>,
+        interface: bool,
     },
     Build,
     Run {
@@ -56,6 +57,7 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         "add" => {
             let mut class = None;
             let mut package = None;
+            let mut interface = false;
             let mut i = 1;
             while i < args.len() {
                 let arg = &args[i];
@@ -67,6 +69,8 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
                     package = Some(args[i].clone());
                 } else if let Some(value) = arg.strip_prefix("--package=") {
                     package = Some(value.to_string());
+                } else if arg == "--interface" || arg == "-i" {
+                    interface = true;
                 } else if arg.starts_with('-') {
                     return Err(format!("unknown flag: {arg}"));
                 } else if class.is_none() {
@@ -76,7 +80,11 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
                 }
                 i += 1;
             }
-            Ok(Command::Add { class, package })
+            Ok(Command::Add {
+                class,
+                package,
+                interface,
+            })
         }
         "build" => {
             if args.len() > 1 {

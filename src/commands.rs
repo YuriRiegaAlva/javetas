@@ -111,7 +111,12 @@ pub fn new_cmd(name: Option<&str>, package: Option<&str>) -> i32 {
     0
 }
 
-pub fn add_cmd(project: &Project, class: Option<&str>, package: Option<&str>) -> i32 {
+pub fn add_cmd(
+    project: &Project,
+    class: Option<&str>,
+    package: Option<&str>,
+    interface: bool,
+) -> i32 {
     let class = match class {
         Some(c) if !c.is_empty() => c.to_string(),
         _ => match prompt("Class name:") {
@@ -151,7 +156,11 @@ pub fn add_cmd(project: &Project, class: Option<&str>, package: Option<&str>) ->
     if file.exists() {
         return error(&format!("file already exists: {}", file.display()));
     }
-    let content = templates::class_java(package.as_deref(), &class);
+    let content = if interface {
+        templates::interface_java(package.as_deref(), &class)
+    } else {
+        templates::class_java(package.as_deref(), &class)
+    };
     if let Err(e) = fs::write(&file, content) {
         return error(&format!("cannot write {}: {e}", file.display()));
     }

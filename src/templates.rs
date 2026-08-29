@@ -59,6 +59,34 @@ public class {name} {{
     )
 }
 
+pub fn interface_java(package: Option<&str>, name: &str) -> String {
+    let package_line = match package {
+        Some(p) => format!("package {p};\n\n"),
+        None => {
+            String::from("// This project has no package: classes live directly inside src/.\n\n")
+        }
+    };
+    format!(
+        r#"{package_line}/**
+ * {name}.java
+ *
+ * An interface is a contract, not an implementation.
+ *
+ * - It declares method signatures: names and types, but no bodies.
+ * - Any class that says `implements {name}` must provide those methods.
+ * - A class can implement several interfaces, unlike `extends` (one class only).
+ *
+ * Use it from a class like this:
+ *   public class MiClase implements {name} {{
+ *       // write here every method {name} declares
+ *   }}
+ */
+public interface {name} {{
+}}
+"#
+    )
+}
+
 pub fn makefile(main_class: &str) -> String {
     format!(
         r#"# Shortcuts for compiling and running this project.

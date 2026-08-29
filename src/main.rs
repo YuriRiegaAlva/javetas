@@ -18,7 +18,8 @@ Create and manage simple Java projects for learning.
 
 Usage:
   javetas new <name> [--package <pkg>]   Create a new project
-  javetas add <ClassName> [--package <pkg>]   Add a class to the current project
+  javetas add <Name> [--package <pkg>] [--interface]
+                                     Add a class (or an interface with --interface)
   javetas build                          Compile all sources into out/
   javetas run [ClassName]                Compile and run (default: Main)
   javetas update [--yes]                 Self-update to the latest release
@@ -27,6 +28,7 @@ Usage:
 
 Options:
   -p, --package <pkg>   Package for a new project or class (e.g. com.ejemplo)
+  -i, --interface       With `add`: create an interface instead of a class
   -y, --yes             Skip the update confirmation prompt
   -h, --help            Show this help
   -v, --version         Show the version
@@ -36,6 +38,8 @@ Examples:
   javetas new demo --package com.ejemplo
   cd demo
   javetas add Persona
+  javetas add Persona --package com.otro
+  javetas add Contrato --interface
   javetas run"
     );
 }
@@ -75,8 +79,12 @@ fn main() -> ExitCode {
             0
         }
         Command::New { name, package } => commands::new_cmd(name.as_deref(), package.as_deref()),
-        Command::Add { class, package } => {
-            with_project(|p| commands::add_cmd(p, class.as_deref(), package.as_deref()))
+        Command::Add {
+            class,
+            package,
+            interface,
+        } => {
+            with_project(|p| commands::add_cmd(p, class.as_deref(), package.as_deref(), interface))
         }
         Command::Build => with_project(commands::build_cmd),
         Command::Run { class } => with_project(|p| commands::run_cmd(p, class.as_deref())),
