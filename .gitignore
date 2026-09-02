@@ -1,8 +1,14 @@
 /target
 
-# macOS metadata (especially on FAT/exFAT drives)
+# macOS metadata & copies (especially on FAT/exFAT drives)
 ._*
 .DS_Store
+.AppleDouble
+.LSOverride
+*.app/
+.Spotlight-V100
+.Trashes
+.fseventsd
 
 # code index cache (regenerable)
 .codegraph/
