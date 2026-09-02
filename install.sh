@@ -33,13 +33,44 @@ tar -xzf "$tmp/javetas.tar.gz" -C "$dest" javetas
 chmod +x "$dest/javetas"
 rm -rf "$tmp"
 
+add_to_rc() {
+    rc="$1"
+    if [ ! -f "$rc" ]; then
+        mkdir -p "$(dirname "$rc")"
+        touch "$rc"
+    fi
+    if ! grep -qF "$dest" "$rc" 2>/dev/null; then
+        printf '\n# javetas\nexport PATH="$PATH:%s"\n' "$dest" >> "$rc"
+        echo "  updated $rc"
+    fi
+}
+
 case ":$PATH:" in
     *":$dest:"*) ;;
     *)
-        echo
-        echo "Note: $dest is not in your PATH yet."
-        echo "Add this line to your shell config (~/.bashrc, ~/.zshrc, ...):"
-        echo "  export PATH=\"\$PATH:$dest\""
+        echo "Adding $dest to your shell config..."
+        case "$(basename "${SHELL:-}")" in
+            zsh)
+                add_to_rc "$HOME/.zshrc"
+                add_to_rc "$HOME/.zprofile"
+                echo "Open a new terminal (or run: source ~/.zshrc) to use javetas."
+                ;;
+            bash)
+                if [ "$os" = "Darwin" ]; then
+                    add_to_rc "$HOME/.bash_profile"
+                    echo "Open a new terminal (or run: source ~/.bash_profile) to use javetas."
+                else
+                    add_to_rc "$HOME/.bashrc"
+                    echo "Open a new terminal (or run: source ~/.bashrc) to use javetas."
+                fi
+                ;;
+            *)
+                echo
+                echo "Note: $dest is not in your PATH yet."
+                echo "Add this line to your shell config (~/.bashrc, ~/.zshrc, ...):"
+                echo "  export PATH=\"\$PATH:$dest\""
+                ;;
+        esac
         ;;
 esac
 
