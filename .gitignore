@@ -9,6 +9,6 @@
 .Spotlight-V100
 .Trashes
 .fseventsd
-
+.agents
 # code index cache (regenerable)
 .codegraph/
