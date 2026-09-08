@@ -14,6 +14,7 @@ pub enum Command {
     Run {
         class: Option<String>,
     },
+    Tree,
     Update {
         yes: bool,
     },
@@ -104,6 +105,12 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
                 class = Some(arg.clone());
             }
             Ok(Command::Run { class })
+        }
+        "tree" => {
+            if args.len() > 1 {
+                return Err(format!("unexpected argument: {}", args[1]));
+            }
+            Ok(Command::Tree)
         }
         "update" => {
             let mut yes = false;

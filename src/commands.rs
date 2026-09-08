@@ -253,3 +253,250 @@ pub fn run_cmd(project: &Project, class: Option<&str>) -> i32 {
         Err(e) => error(&format!("cannot run java: {e}")),
     }
 }
+
+fn java_file_role(
+    path: &Path,
+    class_name: &str,
+    full_class: &str,
+    project_main: &str,
+) -> &'static str {
+    if full_class == project_main
+        || class_name == project_main
+        || project_main.ends_with(&format!(".{class_name}"))
+    {
+        return "[main]";
+    }
+    if let Ok(content) = fs::read_to_string(path) {
+        if content.contains("public static void main") {
+            return "[main]";
+        }
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("//") || trimmed.starts_with('*') || trimmed.starts_with("/*") {
+                continue;
+            }
+            let words: Vec<&str> = trimmed.split_whitespace().collect();
+            if words.contains(&"interface") {
+                return "[interface]";
+            }
+            if words.contains(&"class") {
+                return "[class]";
+            }
+        }
+    }
+    "[class]"
+}
+
+struct TreeNode {
+    name: String,
+    is_dir: bool,
+    annotation: Option<String>,
+    children: Vec<TreeNode>,
+}
+
+fn should_ignore_entry(name: &str) -> bool {
+    name == ".git"
+        || name == ".codegraph"
+        || name == "target"
+        || name == "out"
+        || name == ".DS_Store"
+        || name.starts_with("._")
+}
+
+fn build_src_tree(dir: &Path, pkg_parts: &[String], project: &Project) -> Vec<TreeNode> {
+    let mut nodes = Vec::new();
+    let entries = match fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return nodes,
+    };
+
+    let mut items: Vec<PathBuf> = entries
+        .filter_map(|e| e.ok().map(|ent| ent.path()))
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|name| !should_ignore_entry(name))
+        })
+        .collect();
+
+    items.sort_by(|a, b| {
+        let a_is_dir = a.is_dir();
+        let b_is_dir = b.is_dir();
+        if a_is_dir != b_is_dir {
+            b_is_dir.cmp(&a_is_dir)
+        } else {
+            a.file_name().cmp(&b.file_name())
+        }
+    });
+
+    for path in items {
+        let name = match path.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n.to_string(),
+            None => continue,
+        };
+
+        if path.is_dir() {
+            let mut next_pkg = pkg_parts.to_vec();
+            next_pkg.push(name.clone());
+            let pkg_str = next_pkg.join(".");
+            let annotation = if valid_package(&pkg_str) {
+                Some(style::dim(&format!("(package {pkg_str})")))
+            } else {
+                None
+            };
+            let children = build_src_tree(&path, &next_pkg, project);
+            nodes.push(TreeNode {
+                name,
+                is_dir: true,
+                annotation,
+                children,
+            });
+        } else if path.extension().and_then(|e| e.to_str()) == Some("java") {
+            let class_name = path.file_stem().and_then(|s| s.to_str()).unwrap_or(&name);
+            let full_class = if pkg_parts.is_empty() {
+                class_name.to_string()
+            } else {
+                format!("{}.{}", pkg_parts.join("."), class_name)
+            };
+            let role = java_file_role(&path, class_name, &full_class, &project.main);
+            let role_style = match role {
+                "[main]" => style::green(role),
+                "[interface]" => style::yellow(role),
+                _ => style::dim(role),
+            };
+            nodes.push(TreeNode {
+                name,
+                is_dir: false,
+                annotation: Some(role_style),
+                children: Vec::new(),
+            });
+        } else {
+            nodes.push(TreeNode {
+                name,
+                is_dir: false,
+                annotation: None,
+                children: Vec::new(),
+            });
+        }
+    }
+
+    nodes
+}
+
+fn print_tree_nodes(
+    nodes: &[TreeNode],
+    prefix: &str,
+    dir_count: &mut usize,
+    java_count: &mut usize,
+) {
+    for (i, node) in nodes.iter().enumerate() {
+        let is_last = i + 1 == nodes.len();
+        let connector = if is_last { "└── " } else { "├── " };
+        let new_prefix = if is_last {
+            format!("{prefix}    ")
+        } else {
+            format!("{prefix}│   ")
+        };
+
+        let annot_str = match &node.annotation {
+            Some(a) => format!(" {a}"),
+            None => String::new(),
+        };
+
+        if node.is_dir {
+            *dir_count += 1;
+            println!("{prefix}{connector}{}/{annot_str}", node.name);
+            print_tree_nodes(&node.children, &new_prefix, dir_count, java_count);
+        } else {
+            if node.name.ends_with(".java") {
+                *java_count += 1;
+            }
+            println!("{prefix}{connector}{}{annot_str}", node.name);
+        }
+    }
+}
+
+pub fn tree_cmd(project: &Project) -> i32 {
+    let root_name = project
+        .root
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("project");
+
+    let pkg_info = match &project.package {
+        Some(p) => format!(" {}", style::dim(&format!("(package {p})"))),
+        None => String::new(),
+    };
+    println!("{}{pkg_info}", style::bold(&format!("{root_name}/")));
+
+    let entries = match fs::read_dir(&project.root) {
+        Ok(e) => e,
+        Err(e) => return error(&format!("cannot read project directory: {e}")),
+    };
+
+    let mut items: Vec<PathBuf> = entries
+        .filter_map(|e| e.ok().map(|ent| ent.path()))
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|name| !should_ignore_entry(name))
+        })
+        .collect();
+
+    items.sort_by(|a, b| {
+        let a_is_src = a.file_name().and_then(|n| n.to_str()) == Some("src");
+        let b_is_src = b.file_name().and_then(|n| n.to_str()) == Some("src");
+        if a_is_src != b_is_src {
+            a_is_src.cmp(&b_is_src)
+        } else {
+            let a_is_dir = a.is_dir();
+            let b_is_dir = b.is_dir();
+            if a_is_dir != b_is_dir {
+                a_is_dir.cmp(&b_is_dir)
+            } else {
+                a.file_name().cmp(&b.file_name())
+            }
+        }
+    });
+
+    let mut root_nodes = Vec::new();
+    for path in items {
+        let name = match path.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n.to_string(),
+            None => continue,
+        };
+
+        if name == "src" && path.is_dir() {
+            let children = build_src_tree(&path, &[], project);
+            root_nodes.push(TreeNode {
+                name,
+                is_dir: true,
+                annotation: None,
+                children,
+            });
+        } else if path.is_dir() {
+            root_nodes.push(TreeNode {
+                name,
+                is_dir: true,
+                annotation: None,
+                children: Vec::new(),
+            });
+        } else {
+            root_nodes.push(TreeNode {
+                name,
+                is_dir: false,
+                annotation: None,
+                children: Vec::new(),
+            });
+        }
+    }
+
+    let mut dir_count = 0;
+    let mut java_count = 0;
+    print_tree_nodes(&root_nodes, "", &mut dir_count, &mut java_count);
+
+    let d_s = if dir_count == 1 { "directory" } else { "directories" };
+    let f_s = if java_count == 1 { "Java file" } else { "Java files" };
+    println!("\n{dir_count} {d_s}, {java_count} {f_s}");
+    0
+}

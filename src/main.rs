@@ -22,6 +22,7 @@ Usage:
                                      Add a class (or an interface with --interface)
   javetas build                          Compile all sources into out/
   javetas run [ClassName]                Compile and run (default: Main)
+  javetas tree                           Show project structure and packages
   javetas update [--yes]                 Self-update to the latest release
   javetas help                           Show this help
   javetas version                        Show the version
@@ -88,6 +89,7 @@ fn main() -> ExitCode {
         }
         Command::Build => with_project(commands::build_cmd),
         Command::Run { class } => with_project(|p| commands::run_cmd(p, class.as_deref())),
+        Command::Tree => with_project(commands::tree_cmd),
         Command::Update { yes } => update::update_cmd(yes),
     };
 
