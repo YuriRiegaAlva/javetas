@@ -95,6 +95,7 @@ pub fn makefile(main_class: &str) -> String {
 JAVAC = javac
 JAVA  = java
 OUT   = out
+CP    = out:lib/*
 SRC   = $(shell find src -type f -name '*.java' ! -name '._*')
 
 .PHONY: all build run clean
@@ -103,10 +104,10 @@ all: build
 
 build: $(SRC)
 	mkdir -p $(OUT)
-	$(JAVAC) -d $(OUT) $(SRC)
+	$(JAVAC) -d $(OUT) -cp "$(CP)" $(SRC)
 
 run: build
-	$(JAVA) -cp $(OUT) {main_class}
+	$(JAVA) -cp "$(CP)" {main_class}
 
 clean:
 	rm -rf $(OUT)
@@ -114,6 +115,31 @@ clean:
     )
 }
 
+pub fn javetas_toml(name: &str, package: Option<&str>) -> String {
+    let package_line = match package {
+        Some(p) => format!("package = \"{p}\"\n"),
+        None => String::new(),
+    };
+    format!(
+        r#"# javetas project manifest.
+# Learn more at: {REPO_URL}
+
+[project]
+name = "{name}"
+{package_line}main = "Main"
+
+[dependencies]
+# List dependencies here.
+# Format: alias = "groupId:artifactId:version"
+#
+# Examples:
+# gson = "com.google.code.gson:gson:2.10.1"
+# json = "org.json:json:20231013"
+"#
+    )
+}
+
+#[allow(dead_code)]
 pub fn config(package: Option<&str>) -> String {
     let package = package.map_or_else(String::new, |p| p.to_string());
     format!(
@@ -127,18 +153,26 @@ main=Main
 }
 
 pub fn gitignore() -> String {
-    r#"# Compiled classes
+    r#"# Compiled classes and dependencies
 out/
+lib/
 *.class
+*.jar
 
 # IDE files
 .idea/
 .vscode/
 *.iml
 
-# macOS metadata (especially on FAT/exFAT drives)
+# macOS metadata & copies
 ._*
 .DS_Store
+.AppleDouble
+.LSOverride
+*.app/
+.Spotlight-V100
+.Trashes
+.fseventsd
 "#
     .to_string()
 }
@@ -153,8 +187,8 @@ A Java learning project created with [javetas]({REPO_URL}).
 
 ```
 {name}/
+├── javetas.toml  # project config & dependencies
 ├── Makefile      # build / run / clean shortcuts
-├── .javetas      # javetas config (package, main class)
 ├── .gitignore    # files git should ignore
 └── src/          # your .java source files
 ```

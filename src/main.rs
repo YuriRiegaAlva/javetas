@@ -1,5 +1,6 @@
 mod args;
 mod commands;
+mod deps;
 mod project;
 mod style;
 mod templates;

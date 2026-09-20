@@ -41,7 +41,18 @@ javetas update                          # self-update to the latest release
 javetas update --yes                    # same, without asking
 ```
 
-Each generated project contains a `README.md` that explains how `javac`, `java`, and the classpath work, plus a `Makefile` (`make`, `make run`, `make clean`).
+Each generated project contains a `javetas.toml` manifest, a `README.md` that explains how `javac`, `java`, and the classpath work, plus a `Makefile` (`make`, `make run`, `make clean`).
+
+### Dependencies
+
+Declare Maven dependencies in `javetas.toml` using `alias = "groupId:artifactId:version"`:
+
+```toml
+[dependencies]
+gson = "com.google.code.gson:gson:2.10.1"
+```
+
+`javetas build` and `javetas run` automatically download missing `.jar` files into `lib/` and configure the classpath.
 
 ## Development
 
@@ -55,5 +66,5 @@ cargo install --path .        # install locally
 Push a tag and GitHub Actions builds binaries for Linux, macOS and Windows and attaches them to a GitHub Release:
 
 ```sh
-git tag v0.5.0 && git push origin v0.5.0
+git tag v0.6.0 && git push origin v0.6.0
 ```

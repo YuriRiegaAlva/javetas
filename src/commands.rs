@@ -89,7 +89,10 @@ pub fn new_cmd(name: Option<&str>, package: Option<&str>) -> i32 {
 
     let files: Vec<(PathBuf, String)> = vec![
         (root.join(".gitignore"), templates::gitignore()),
-        (root.join(".javetas"), templates::config(package.as_deref())),
+        (
+            root.join("javetas.toml"),
+            templates::javetas_toml(&name, package.as_deref()),
+        ),
         (root.join("Makefile"), templates::makefile(&main_class)),
         (
             root.join("README.md"),
@@ -190,6 +193,11 @@ fn collect_java_files(dir: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
 }
 
 fn run_javac(project: &Project) -> i32 {
+    let dep_code = crate::deps::ensure_dependencies(project);
+    if dep_code != 0 {
+        return dep_code;
+    }
+
     let src = project.src_dir();
     if !src.is_dir() {
         return error("no src/ directory found (are you in a javetas project?)");
@@ -207,9 +215,12 @@ fn run_javac(project: &Project) -> i32 {
         return error(&format!("cannot create {}: {e}", out.display()));
     }
 
+    let cp = project.classpath();
     let status = Process::new("javac")
         .arg("-d")
         .arg(&out)
+        .arg("-cp")
+        .arg(&cp)
         .args(&files)
         .status();
     match status {
@@ -243,9 +254,10 @@ pub fn run_cmd(project: &Project, class: Option<&str>) -> i32 {
         _ => project.main.clone(),
     };
     let full = project.full_class(&name);
+    let cp = project.classpath();
     let status = Process::new("java")
         .arg("-cp")
-        .arg(project.out_dir())
+        .arg(&cp)
         .arg(&full)
         .status();
     match status {
@@ -416,6 +428,43 @@ fn print_tree_nodes(
     }
 }
 
+fn build_lib_tree(dir: &Path) -> Vec<TreeNode> {
+    let mut nodes = Vec::new();
+    let entries = match fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return nodes,
+    };
+    let mut items: Vec<PathBuf> = entries
+        .filter_map(|e| e.ok().map(|ent| ent.path()))
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|name| !should_ignore_entry(name))
+        })
+        .collect();
+    items.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+    for path in items {
+        let name = match path.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n.to_string(),
+            None => continue,
+        };
+        let is_jar = path.extension().and_then(|e| e.to_str()) == Some("jar");
+        let annotation = if is_jar {
+            Some(style::dim("[dependency]"))
+        } else {
+            None
+        };
+        nodes.push(TreeNode {
+            name,
+            is_dir: path.is_dir(),
+            annotation,
+            children: Vec::new(),
+        });
+    }
+    nodes
+}
+
 pub fn tree_cmd(project: &Project) -> i32 {
     let root_name = project
         .root
@@ -444,10 +493,24 @@ pub fn tree_cmd(project: &Project) -> i32 {
         .collect();
 
     items.sort_by(|a, b| {
-        let a_is_src = a.file_name().and_then(|n| n.to_str()) == Some("src");
-        let b_is_src = b.file_name().and_then(|n| n.to_str()) == Some("src");
-        if a_is_src != b_is_src {
-            a_is_src.cmp(&b_is_src)
+        let a_name = a.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let b_name = b.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let a_order = if a_name == "src" {
+            2
+        } else if a_name == "lib" {
+            1
+        } else {
+            0
+        };
+        let b_order = if b_name == "src" {
+            2
+        } else if b_name == "lib" {
+            1
+        } else {
+            0
+        };
+        if a_order != b_order {
+            a_order.cmp(&b_order)
         } else {
             let a_is_dir = a.is_dir();
             let b_is_dir = b.is_dir();
@@ -468,6 +531,14 @@ pub fn tree_cmd(project: &Project) -> i32 {
 
         if name == "src" && path.is_dir() {
             let children = build_src_tree(&path, &[], project);
+            root_nodes.push(TreeNode {
+                name,
+                is_dir: true,
+                annotation: None,
+                children,
+            });
+        } else if name == "lib" && path.is_dir() {
+            let children = build_lib_tree(&path);
             root_nodes.push(TreeNode {
                 name,
                 is_dir: true,
