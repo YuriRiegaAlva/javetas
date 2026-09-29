@@ -110,6 +110,67 @@ impl Project {
         }
     }
 
+    pub fn manifest_path(&self) -> PathBuf {
+        self.root.join("javetas.toml")
+    }
+
+    /// Removes a dependency from javetas.toml by alias.
+    /// Returns the removed Dependency struct.
+    pub fn remove_dependency(&self, alias: &str) -> Result<Dependency, String> {
+        let manifest = self.manifest_path();
+        if !manifest.is_file() {
+            return Err("no javetas.toml found in this project".into());
+        }
+
+        let dep = self
+            .dependencies
+            .iter()
+            .find(|d| d.alias == alias)
+            .cloned()
+            .ok_or_else(|| format!("dependency `{alias}` not found in javetas.toml"))?;
+
+        let text = fs::read_to_string(&manifest)
+            .map_err(|e| format!("cannot read {}: {e}", manifest.display()))?;
+
+        let mut new_lines = Vec::new();
+        let mut in_deps = false;
+        let mut removed = false;
+
+        for line in text.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with('[') && trimmed.ends_with(']') {
+                in_deps = trimmed[1..trimmed.len() - 1].trim() == "dependencies";
+                new_lines.push(line);
+                continue;
+            }
+
+            if in_deps && !removed {
+                if let Some((key, _)) = trimmed.split_once('=') {
+                    if key.trim() == alias {
+                        removed = true;
+                        continue;
+                    }
+                }
+            }
+
+            new_lines.push(line);
+        }
+
+        if !removed {
+            return Err(format!("dependency `{alias}` not found in javetas.toml"));
+        }
+
+        let mut output = new_lines.join("\n");
+        if text.ends_with('\n') {
+            output.push('\n');
+        }
+
+        fs::write(&manifest, output)
+            .map_err(|e| format!("cannot write {}: {e}", manifest.display()))?;
+
+        Ok(dep)
+    }
+
     /// Returns classpath string combining out/ and lib/*.
     pub fn classpath(&self) -> String {
         let out = self.out_dir();

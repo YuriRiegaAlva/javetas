@@ -15,6 +15,9 @@ pub enum Command {
         class: Option<String>,
     },
     Tree,
+    Remove {
+        aliases: Vec<String>,
+    },
     Update {
         yes: bool,
     },
@@ -111,6 +114,16 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
                 return Err(format!("unexpected argument: {}", args[1]));
             }
             Ok(Command::Tree)
+        }
+        "remove" | "rm" => {
+            let mut aliases = Vec::new();
+            for arg in &args[1..] {
+                if arg.starts_with('-') {
+                    return Err(format!("unknown flag: {arg}"));
+                }
+                aliases.push(arg.clone());
+            }
+            Ok(Command::Remove { aliases })
         }
         "update" => {
             let mut yes = false;

@@ -35,8 +35,8 @@ javetas add Contrato --interface        # add an interface instead of a class
 javetas build                           # compile into out/
 javetas run                             # compile and run Main
 javetas run Persona                     # run a different class
-javetas run com.otro.Persona            # run a class in another package
 javetas tree                            # show project structure and packages
+javetas remove gson                     # remove a dependency (or `javetas rm`)
 javetas update                          # self-update to the latest release
 javetas update --yes                    # same, without asking
 ```
@@ -54,6 +54,13 @@ gson = "com.google.code.gson:gson:2.10.1"
 
 `javetas build` and `javetas run` automatically download missing `.jar` files into `lib/` and configure the classpath.
 
+To remove one or more dependencies and clean up their `.jar` files:
+
+```sh
+javetas remove gson
+javetas remove gson sqlite              # remove multiple at once
+```
+
 ## Development
 
 ```sh
@@ -66,5 +73,5 @@ cargo install --path .        # install locally
 Push a tag and GitHub Actions builds binaries for Linux, macOS and Windows and attaches them to a GitHub Release:
 
 ```sh
-git tag v0.6.0 && git push origin v0.6.0
+git tag v0.7.0 && git push origin v0.7.0
 ```

@@ -266,6 +266,55 @@ pub fn run_cmd(project: &Project, class: Option<&str>) -> i32 {
     }
 }
 
+pub fn remove_cmd(project: &Project, aliases: &[String]) -> i32 {
+    let aliases: Vec<String> = if aliases.is_empty() {
+        match prompt("Dependency alias to remove:") {
+            Some(a) if !a.is_empty() => a.split_whitespace().map(|s| s.to_string()).collect(),
+            _ => return error("a dependency alias is required"),
+        }
+    } else {
+        aliases.to_vec()
+    };
+
+    if aliases.is_empty() {
+        return error("a dependency alias is required");
+    }
+
+    let mut had_error = false;
+    let lib_dir = project.lib_dir();
+
+    for alias in &aliases {
+        match project.remove_dependency(alias) {
+            Ok(dep) => {
+                let jar_path = lib_dir.join(dep.jar_name());
+                if jar_path.is_file() {
+                    let _ = fs::remove_file(&jar_path);
+                }
+                ok(&format!(
+                    "removed dependency {} ({} v{})",
+                    style::bold(alias),
+                    dep.artifact_id,
+                    dep.version
+                ));
+            }
+            Err(e) => {
+                error(&e);
+                had_error = true;
+            }
+        }
+    }
+
+    if lib_dir.is_dir() {
+        if let Ok(mut entries) = fs::read_dir(&lib_dir) {
+            if entries.next().is_none() {
+                let _ = fs::remove_dir(&lib_dir);
+            }
+        }
+    }
+
+    if had_error { 1 } else { 0 }
+}
+
 fn java_file_role(
     path: &Path,
     class_name: &str,
