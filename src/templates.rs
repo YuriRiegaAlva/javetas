@@ -134,6 +134,7 @@ name = "{name}"
 #
 # Examples:
 # gson = "com.google.code.gson:gson:2.10.1"
+# sqlite = "org.xerial:sqlite-jdbc:3.53.4.0"
 # json = "org.json:json:20231013"
 "#
     )
